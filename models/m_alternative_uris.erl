@@ -26,6 +26,8 @@
     install/1
     ]).
 
+-include_lib("zotonic.hrl").
+
 %% @doc Lookup the rsc id for the given host and path
 list_dispatch_host(Host, Path, Context) ->
     z_db:q("select path, rsc_id, is_permanent
@@ -98,7 +100,16 @@ host_path(<<>>) ->
     {<<>>,<<>>};
 host_path(<<$:, Rest/binary>>) ->
     host_path(Rest);
-host_path(HostPath) ->
+host_path(<<$/, $/, _/binary>> = HostPath) ->
+    host_path_1(HostPath);
+host_path(<<"http:", _/binary>> = HostPath) ->
+    host_path_1(HostPath);
+host_path(<<"https:", _/binary>> = HostPath) ->
+    host_path_1(HostPath);
+host_path(Path) ->
+    {<<>>, remove_slash(Path)}.
+
+host_path_1(HostPath) ->
     HostPath1 = z_html:sanitize_uri(HostPath),
     {_Protocol, Host, Path, _Qs, _Hash} = mochiweb_util:urlsplit(z_convert:to_list(HostPath1)),
     {z_string:to_lower(z_convert:to_binary(Host)), z_convert:to_binary(remove_slash(Path))}.
