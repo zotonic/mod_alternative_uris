@@ -26,6 +26,11 @@
     install/1
     ]).
 
+% For testing
+-export([
+    alt_uris/1
+    ]).
+
 -include_lib("zotonic.hrl").
 
 %% @doc Lookup the rsc id for the given host and path
@@ -92,7 +97,7 @@ alt_uris(undefined) ->
 alt_uris(<<>>) ->
     [];
 alt_uris(Text) ->
-    Lines = binary:split(z_string:trim(Text), <<10>>),
+    Lines = binary:split(z_string:trim(Text), <<10>>, [global]),
     HPs = [ host_path(z_string:trim(Line)) || Line <- Lines ],
     [ HP || HP <- HPs, HP =/= {<<>>,<<>>} ].
 
@@ -110,8 +115,7 @@ host_path(Path) ->
     {<<>>, remove_slash(Path)}.
 
 host_path_1(HostPath) ->
-    HostPath1 = z_html:sanitize_uri(HostPath),
-    {_Protocol, Host, Path, _Qs, _Hash} = mochiweb_util:urlsplit(z_convert:to_list(HostPath1)),
+    {_Protocol, Host, Path, _Qs, _Hash} = mochiweb_util:urlsplit(z_convert:to_list(HostPath)),
     {z_string:to_lower(z_convert:to_binary(Host)), z_convert:to_binary(remove_slash(Path))}.
 
 remove_slash(<<$/,Path/binary>>) -> Path;
