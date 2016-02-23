@@ -43,7 +43,7 @@ observe_dispatch_host(#dispatch_host{host=Host, path=Path}, Context) ->
     case m_alternative_uris:list_dispatch_host(Host, Path, Context) of
         [{BestPath,_,_}=Best|Rest] ->
             {ok, {RscId,IsPerm}} = select_best(Rest, size(BestPath), Best),
-            #dispatch_redirect{location=m_rsc:p(RscId, page_url, Context), is_permanent=IsPerm};
+            {ok, #dispatch_redirect{location=m_rsc:p(RscId, page_url, Context), is_permanent=IsPerm}};
         [] ->
             undefined
     end.
