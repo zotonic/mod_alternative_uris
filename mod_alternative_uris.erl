@@ -28,6 +28,7 @@
     observe_pivot_update/3,
     observe_dispatch_host/2,
     observe_dispatch/2,
+    observe_rsc_merge/2,
     manage_schema/2
 ]).
 
@@ -53,6 +54,23 @@ observe_dispatch(#dispatch{path=Path}, Context) ->
     case m_alternative_uris:get_dispatch(Path, Context) of
         {RscId,IsPermanent} -> {ok, #dispatch_redirect{location=m_rsc:p(RscId, page_url, Context), is_permanent=IsPermanent}};
         undefined -> undefined
+    end.
+
+%% @doc Merge the alternative uri fields when merging resources
+observe_rsc_merge(#rsc_merge{ winner_id = WinnerId, looser_id = LoserId }, Context) ->
+    W = m_rsc:p(WinnerId, alternative_uris, Context),
+    L = m_rsc:p(LoserId, alternative_uris, Context),
+    case {W, L} of
+        {undefined, _} -> ok;
+        {_, undefined} -> ok;
+        _ ->
+            case z_string:trim(<<W/binary, $\n, L/binary>>) of
+                <<>> -> ok;
+                W -> ok;
+                W1 ->
+                    {ok, _} = m_rsc:update(WinnerId, [ {alternative_uris, W1} ], [ no_touch ], Context),
+                    ok
+            end
     end.
 
 manage_schema(_, Context) ->

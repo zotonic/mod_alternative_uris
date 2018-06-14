@@ -39,7 +39,7 @@ list_dispatch_host(Host, Path, Context) ->
             from alternative_uris 
             where host = lower($1) 
               and (path = $2 or path = '')", 
-           [Host, remove_slash(Path)],
+           [Host, z_string:truncate(remove_slash(Path), 128, <<>>) ],
            Context).
 
 get_dispatch(Path, Context) ->
@@ -47,7 +47,7 @@ get_dispatch(Path, Context) ->
                 from alternative_uris 
                 where host = '' 
                   and path = $1", 
-               [remove_slash(Path)],
+               [ z_string:truncate(remove_slash(Path), 128, <<>>) ],
                Context).
 
 insert(RscId, AltUris, Context) ->
@@ -98,8 +98,10 @@ alt_uris(<<>>) ->
     [];
 alt_uris(Text) ->
     Lines = binary:split(z_string:trim(Text), <<10>>, [global]),
-    HPs = [ host_path(z_string:trim(Line)) || Line <- Lines ],
-    [ HP || HP <- HPs, HP =/= {<<>>,<<>>} ].
+    HPs = [ host_path( z_string:trim(Line) ) || Line <- Lines ],
+    HPs1 = [ HP || HP <- HPs, HP =/= {<<>>,<<>>} ],
+    HPs2 = [ {H, z_string:truncate(P, 128, <<>>)} || {H, P} <- HPs1 ],
+    lists:usort(HPs2).
 
 host_path(<<>>) ->
     {<<>>,<<>>};
